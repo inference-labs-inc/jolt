@@ -7,7 +7,7 @@ use core::panic;
 use common::{attributes::parse_attributes, rv_trace::MemoryLayout};
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::quote;
+use quote::{quote, ToTokens};
 use std::sync::Once;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -529,8 +529,8 @@ impl MacroBuilder {
     }
 
     fn get_func_hash(&self) -> Option<String> {
-        let mut hasher = DefaultHasher::new();
-        self.func.sig.ident.hash(&mut hasher);
+        let mut hasher: DefaultHasher = DefaultHasher::new();
+        self.func.block.as_ref().to_token_stream().to_string().hash(&mut hasher);
         Some(hasher.finish().to_string())
     }
 
