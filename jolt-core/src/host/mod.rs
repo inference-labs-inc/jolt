@@ -44,6 +44,7 @@ pub mod toolchain;
 pub struct Program {
     guest: String,
     func: Option<String>,
+    hash: Option<String>,
     input: Vec<u8>,
     memory_size: u64,
     stack_size: u64,
@@ -58,6 +59,7 @@ impl Program {
         Self {
             guest: guest.to_string(),
             func: None,
+            hash: None,
             input: Vec::new(),
             memory_size: DEFAULT_MEMORY_SIZE,
             stack_size: DEFAULT_STACK_SIZE,
@@ -74,6 +76,10 @@ impl Program {
 
     pub fn set_func(&mut self, func: &str) {
         self.func = Some(func.to_string())
+    }
+
+    pub fn set_hash(&mut self, hash: &str) {
+        self.hash = Some(hash.to_string());
     }
 
     pub fn set_input<T: Serialize>(&mut self, input: &T) {
@@ -137,9 +143,10 @@ impl Program {
             }
 
             let target = format!(
-                "/tmp/jolt-guest-target-{}-{}",
+                "/tmp/jolt-guest-target-{}-{}-{}",
                 self.guest,
-                self.func.as_ref().unwrap_or(&"".to_string())
+                self.func.as_ref().unwrap_or(&"".to_string()),
+                self.hash.as_ref().unwrap_or(&"".to_string()),
             );
 
             let output = Command::new("cargo")

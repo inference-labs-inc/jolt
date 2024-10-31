@@ -9,6 +9,8 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use std::sync::Once;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use syn::{parse_macro_input, AttributeArgs, Ident, ItemFn, PatType, ReturnType, Type};
 
 static WASM_IMPORTS_INIT: Once = Once::new();
@@ -153,6 +155,8 @@ impl MacroBuilder {
         let fn_name = self.get_func_name();
         let fn_name_str = fn_name.to_string();
         let analyze_fn_name = Ident::new(&format!("analyze_{}", fn_name), fn_name.span());
+        let hash = self.get_func_hash();
+        let hash_str = hash.unwrap_or_default();
         let inputs = &self.func.sig.inputs;
         let set_program_args = self.func_args.iter().map(|(name, _)| {
             quote! {
@@ -168,6 +172,7 @@ impl MacroBuilder {
 
                 let mut program = Program::new(#guest_name);
                 program.set_func(#fn_name_str);
+                program.set_hash(#hash_str);
                 #set_std
                 #set_mem_size
                 #(#set_program_args;)*
@@ -186,6 +191,8 @@ impl MacroBuilder {
         let fn_name = self.get_func_name();
         let fn_name_str = fn_name.to_string();
         let preprocess_fn_name = Ident::new(&format!("preprocess_{}", fn_name), fn_name.span());
+        let hash = self.get_func_hash();
+        let hash_str = hash.unwrap_or_default();
         quote! {
             #[cfg(all(not(target_arch = "wasm32"), not(feature = "guest")))]
             pub fn #preprocess_fn_name() -> (
@@ -196,6 +203,7 @@ impl MacroBuilder {
 
                 let mut program = Program::new(#guest_name);
                 program.set_func(#fn_name_str);
+                program.set_hash(#hash_str);
                 #set_std
                 #set_mem_size
                 let (bytecode, memory_init) = program.decode();
@@ -518,6 +526,12 @@ impl MacroBuilder {
 
     fn get_func_name(&self) -> &Ident {
         &self.func.sig.ident
+    }
+
+    fn get_func_hash(&self) -> Option<String> {
+        let mut hasher = DefaultHasher::new();
+        self.func.sig.ident.hash(&mut hasher);
+        Some(hasher.finish().to_string())
     }
 
     fn get_guest_name(&self) -> String {
