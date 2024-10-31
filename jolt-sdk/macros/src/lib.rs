@@ -8,9 +8,9 @@ use common::{attributes::parse_attributes, rv_trace::MemoryLayout};
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use std::sync::Once;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::sync::Once;
 use syn::{parse_macro_input, AttributeArgs, Ident, ItemFn, PatType, ReturnType, Type};
 
 static WASM_IMPORTS_INIT: Once = Once::new();
@@ -530,7 +530,7 @@ impl MacroBuilder {
 
     fn get_func_hash(&self) -> Option<String> {
         let mut hasher = DefaultHasher::new();
-        self.func.sig.ident.hash(&mut hasher);
+        self.func.block.hash(&mut hasher);
         Some(hasher.finish().to_string())
     }
 
